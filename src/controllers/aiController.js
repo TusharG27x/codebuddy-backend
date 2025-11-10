@@ -1,5 +1,6 @@
 // src/controllers/aiController.js
 import { GoogleGenAI } from "@google/genai"; // This import is correct
+import Submission from "../models/submissionModel.js";
 
 // @desc    Generate a code hint
 // @route   POST /api/ai/get-hint
@@ -46,6 +47,11 @@ const getCodeHint = async (req, res) => {
     // --- 4. THIS IS THE FINAL, CORRECTED CODE ---
     // We get the hint from the path we found in your log
     const hint = result.candidates[0].content.parts[0].text;
+
+    await Submission.create({
+      user: req.user._id, // We get this from our 'protect' middleware
+      problemStatement: problem || "Untitled Problem",
+    });
 
     res.status(200).json({ hint: hint });
     // ----------------------------------------
