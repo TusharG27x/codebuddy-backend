@@ -34,6 +34,7 @@ const getCodeHint = async (req, res) => {
       Please analyze the code in the context of the problem.
       - **Do NOT** provide the complete, corrected code.
       - **DO** provide a single, small, actionable hint.
+      - **CRITICAL RULE:** If the code is a mix of different languages (e.g., Python and Java) or is too jumbled to be analyzed, your hint should be to gently point that out. For example: "It looks like you're mixing syntax from a few different languages! Try sticking to one language."
       - Keep your hint to 1-2 sentences.
       - Be encouraging!
     `;
