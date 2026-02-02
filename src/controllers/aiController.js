@@ -16,7 +16,7 @@ const getCodeHint = async (req, res) => {
       return res.status(400).json({ message: "Code is required." });
     }
 
-    // --- 2. YOUR EXACT ORIGINAL PROMPT ---
+    // --- 2. YOUR EXACT ORIGINAL PROMPT (UNCHANGED) ---
     const prompt = `
       You are CodeBuddy, an expert AI coding assistant.
       Your goal is to help users learn by providing hints, NOT full solutions.
@@ -39,14 +39,15 @@ const getCodeHint = async (req, res) => {
       - Be encouraging!
     `;
 
-    // --- 3. THE FIX: Using "Flash-Lite" which has a free tier ---
+    // --- 3. THE FIX: Use "gemini-flash-latest" ---
+    // This alias points to the stable version (1.5) which has a working Free Tier.
+    // The 2.0/2.5 models are restricted (limit: 0) for your account.
     const result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash-lite-001",
+      model: "gemini-flash-latest",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
     // --- 4. Get the hint ---
-    // Using the safe access method (optional chaining) to prevent crashes
     const hint = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
     await Submission.create({
