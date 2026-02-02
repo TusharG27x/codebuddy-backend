@@ -2,21 +2,16 @@
 import { GoogleGenAI } from "@google/genai";
 import Submission from "../models/submissionModel.js";
 
-// @desc    Generate a code hint
-// @route   POST /api/ai/get-hint
-// @access  Private
 const getCodeHint = async (req, res) => {
   try {
-    // --- 1. Initialize the AI client ---
-    const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY);
-
+    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     const { code, problem } = req.body;
 
     if (!code) {
       return res.status(400).json({ message: "Code is required." });
     }
 
-    // --- 2. This is our full, correct prompt ---
+    // --- YOUR ORIGINAL (BETTER) PROMPT ---
     const prompt = `
       You are CodeBuddy, an expert AI coding assistant.
       Your goal is to help users learn by providing hints, NOT full solutions.
@@ -34,19 +29,22 @@ const getCodeHint = async (req, res) => {
       Please analyze the code in the context of the problem.
       - **Do NOT** provide the complete, corrected code.
       - **DO** provide a single, small, actionable hint.
-      - **CRITICAL RULE:** If the code is a mix of different languages (e.g., Python and Java) or is too jumbled to be analyzed, your hint should be to gently point that out.
+      - **CRITICAL RULE:** If the code is a mix of different languages (e.g., Python and Java) or is too jumbled to be analyzed, your hint should be to gently point that out. For example: "It looks like you're mixing syntax from a few different languages! Try sticking to one language."
       - Keep your hint to 1-2 sentences.
       - Be encouraging!
     `;
 
-    // --- 3. THE FIX IS HERE: Switch to "gemini-1.5-flash" ---
+    // --- THE TECHNICAL FIX ---
+    // Using the model we confirmed exists in your account: Gemini 2.0 Flash
     const result = await genAI.models.generateContent({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash-001",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
-    // --- 4. Get the hint ---
-    const hint = result.candidates[0].content.parts[0].text;
+    // Safe way to get the text (works with new SDK)
+    const hint =
+      result.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "Check your logic and syntax.";
 
     await Submission.create({
       user: req.user._id,
@@ -56,14 +54,6 @@ const getCodeHint = async (req, res) => {
     res.status(200).json({ hint: hint });
   } catch (error) {
     console.error("Gemini API Error:", error);
-
-    // Optional: Return a specific message if quota is hit, to help debugging
-    if (error.status === 429) {
-      return res
-        .status(429)
-        .json({ message: "AI Quota Exceeded. Please try again later." });
-    }
-
     res.status(500).json({ message: "Error generating hint from AI." });
   }
 };
