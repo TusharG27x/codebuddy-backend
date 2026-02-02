@@ -1,5 +1,5 @@
 // src/controllers/aiController.js
-import { GoogleGenAI } from "@google/genai"; // This import is correct
+import { GoogleGenAI } from "@google/genai";
 import Submission from "../models/submissionModel.js";
 
 // @desc    Generate a code hint
@@ -34,30 +34,36 @@ const getCodeHint = async (req, res) => {
       Please analyze the code in the context of the problem.
       - **Do NOT** provide the complete, corrected code.
       - **DO** provide a single, small, actionable hint.
-      - **CRITICAL RULE:** If the code is a mix of different languages (e.g., Python and Java) or is too jumbled to be analyzed, your hint should be to gently point that out. For example: "It looks like you're mixing syntax from a few different languages! Try sticking to one language."
+      - **CRITICAL RULE:** If the code is a mix of different languages (e.g., Python and Java) or is too jumbled to be analyzed, your hint should be to gently point that out.
       - Keep your hint to 1-2 sentences.
       - Be encouraging!
     `;
 
-    // --- 3. This is the correct API call ---
+    // --- 3. THE FIX IS HERE: Switch to "gemini-1.5-flash" ---
     const result = await genAI.models.generateContent({
-      model: "gemini-pro-latest",
+      model: "gemini-1.5-flash",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
-    // --- 4. THIS IS THE FINAL, CORRECTED CODE ---
-    // We get the hint from the path we found in your log
+    // --- 4. Get the hint ---
     const hint = result.candidates[0].content.parts[0].text;
 
     await Submission.create({
-      user: req.user._id, // We get this from our 'protect' middleware
+      user: req.user._id,
       problemStatement: problem || "Untitled Problem",
     });
 
     res.status(200).json({ hint: hint });
-    // ----------------------------------------
   } catch (error) {
     console.error("Gemini API Error:", error);
+
+    // Optional: Return a specific message if quota is hit, to help debugging
+    if (error.status === 429) {
+      return res
+        .status(429)
+        .json({ message: "AI Quota Exceeded. Please try again later." });
+    }
+
     res.status(500).json({ message: "Error generating hint from AI." });
   }
 };
