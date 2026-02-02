@@ -2,16 +2,21 @@
 import { GoogleGenAI } from "@google/genai";
 import Submission from "../models/submissionModel.js";
 
+// @desc    Generate a code hint
+// @route   POST /api/ai/get-hint
+// @access  Private
 const getCodeHint = async (req, res) => {
   try {
+    // --- 1. Initialize the AI client ---
     const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
     const { code, problem } = req.body;
 
     if (!code) {
       return res.status(400).json({ message: "Code is required." });
     }
 
-    // --- YOUR ORIGINAL (BETTER) PROMPT ---
+    // --- 2. YOUR EXACT ORIGINAL PROMPT ---
     const prompt = `
       You are CodeBuddy, an expert AI coding assistant.
       Your goal is to help users learn by providing hints, NOT full solutions.
@@ -34,17 +39,15 @@ const getCodeHint = async (req, res) => {
       - Be encouraging!
     `;
 
-    // --- THE TECHNICAL FIX ---
-    // Using the model we confirmed exists in your account: Gemini 2.0 Flash
+    // --- 3. THE FIX: Using "Flash-Lite" which has a free tier ---
     const result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash-001",
+      model: "gemini-2.0-flash-lite-001",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     });
 
-    // Safe way to get the text (works with new SDK)
-    const hint =
-      result.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Check your logic and syntax.";
+    // --- 4. Get the hint ---
+    // Using the safe access method (optional chaining) to prevent crashes
+    const hint = result.candidates?.[0]?.content?.parts?.[0]?.text;
 
     await Submission.create({
       user: req.user._id,
@@ -54,7 +57,9 @@ const getCodeHint = async (req, res) => {
     res.status(200).json({ hint: hint });
   } catch (error) {
     console.error("Gemini API Error:", error);
-    res.status(500).json({ message: "Error generating hint from AI." });
+    res
+      .status(500)
+      .json({ message: "Error generating hint from AI: " + error.message });
   }
 };
 
