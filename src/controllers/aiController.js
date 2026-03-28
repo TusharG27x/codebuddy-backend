@@ -65,4 +65,54 @@ const getCodeHint = async (req, res) => {
   }
 };
 
-export { getCodeHint };
+// --- NEW FEATURE: Code Complexity Analyzer ---
+// @desc    Analyze code time and space complexity
+// @route   POST /api/ai/analyze-complexity
+// @access  Private
+const analyzeComplexity = async (req, res) => {
+  try {
+    const { code, language } = req.body;
+
+    if (!code || code === "// Write your code here...") {
+      return res
+        .status(400)
+        .json({ message: "Please provide valid code to analyze." });
+    }
+
+    // Initialize the AI client using your existing setup
+    const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+    // Strict prompt engineering to force the AI into a specific output format
+    const prompt = `
+      You are an expert Computer Science professor. Analyze the following ${language || "programming"} code.
+      Calculate its Big O Time Complexity and Space Complexity.
+      
+      You MUST respond in EXACTLY this format, with no extra markdown or introductory text:
+      Time: O(...)
+      Space: O(...)
+      Explanation: (Provide a 1-2 sentence explanation of why).
+
+      Code to analyze:
+      ${code}
+    `;
+
+    const result = await genAI.models.generateContent({
+      model: "gemini-flash-latest",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    });
+
+    const analysisText =
+      result.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "Time: Unknown\nSpace: Unknown\nExplanation: Could not generate analysis.";
+
+    res.status(200).json({ analysis: analysisText });
+  } catch (error) {
+    console.error("Complexity Analysis Error:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to analyze code complexity: " + error.message });
+  }
+};
+
+// --- UPDATED: Exporting both functions ---
+export { getCodeHint, analyzeComplexity };

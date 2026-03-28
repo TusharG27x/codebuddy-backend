@@ -2,6 +2,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import codeRoutes from "./src/routes/codeRoutes.js";
 import express from "express";
 import cors from "cors"; // 1. Import cors
 import cookieParser from "cookie-parser";
@@ -34,7 +35,7 @@ app.use(
       return callback(null, true);
     },
     credentials: true,
-  })
+  }),
 );
 
 app.use(express.json());
@@ -45,11 +46,12 @@ app.use(cookieParser());
 app.use("/api/users", userRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/code", codeRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running...");
 });
 
 app.listen(port, "0.0.0.0", () =>
-  console.log(`Server running on port ${port}`)
+  console.log(`Server running on port ${port}`),
 );
