@@ -5,13 +5,13 @@ import axios from "axios";
 // @route   POST /api/code/execute
 // @access  Private
 const executeCode = async (req, res) => {
-  const { code, language = "python" } = req.body;
+  // --- UPDATED: Destructure 'stdin' from the frontend request ---
+  const { code, language = "python", stdin = "" } = req.body;
 
   if (!code) {
     return res.status(400).json({ message: "No code provided to execute." });
   }
 
-  // 1. Map our frontend languages to JDoodle's specific compiler codes
   const languageMap = {
     python: { lang: "python3", versionIndex: "3" },
     javascript: { lang: "nodejs", versionIndex: "3" },
@@ -19,7 +19,6 @@ const executeCode = async (req, res) => {
     cpp: { lang: "cpp17", versionIndex: "0" },
   };
 
-  // Default to Python if something goes wrong
   const selectedConfig = languageMap[language] || languageMap["python"];
 
   try {
@@ -27,6 +26,7 @@ const executeCode = async (req, res) => {
       script: code,
       language: selectedConfig.lang,
       versionIndex: selectedConfig.versionIndex,
+      stdin: stdin, // --- NEW: Pass the custom input to the JDoodle container ---
       clientId: process.env.JDOODLE_CLIENT_ID,
       clientSecret: process.env.JDOODLE_CLIENT_SECRET,
     });
